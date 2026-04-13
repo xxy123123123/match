@@ -1,4 +1,4 @@
-#Pango50k + PC 车牌识别工程：YOLOv8 多目标检测与跟踪、FPGA 协议联调、无摄像头离线回放评估。
+#Pango50k + PC 车牌识别工程：YOLOv8 多目标检测与跟踪、FPGA 协议联调、无摄像头离线回放评估
 # Pango50k + OV5640 + PC(OpenCV) 车牌识别工程
 
 ## 1. 目标
