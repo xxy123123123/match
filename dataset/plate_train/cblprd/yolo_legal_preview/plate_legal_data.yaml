@@ -1,0 +1,7 @@
+path: D:/文档/match/dataset/plate_train/cblprd/yolo_legal_preview
+train: images/train
+val: images/val
+names:
+  0: legal_common
+  1: legal_special
+  2: illegal

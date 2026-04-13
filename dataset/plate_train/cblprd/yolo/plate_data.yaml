@@ -1,0 +1,5 @@
+path: D:/文档/match/dataset/plate_train/cblprd/yolo
+train: images/train
+val: images/val
+names:
+  0: plate

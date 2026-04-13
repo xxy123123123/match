@@ -1,0 +1,104 @@
+#========================
+# MES50HP 完整 IO 约束（FDC 格式）
+# 用于 PDS 工具链
+# 生成日期：2026-04-09
+#========================
+
+#========================
+# 时钟（推荐 P20 - 50MHz 晶振）
+#========================
+set_io clk P20
+set_clock clk 50MHz
+set_io_standard clk LVCMOS33
+
+#========================
+# 复位
+#========================
+set_io rst_n K18
+set_io_standard rst_n LVCMOS33
+
+#========================
+# LED（输出指示）
+#========================
+set_io o_bin B2
+set_io o_bbox_valid A2
+set_io_standard o_bin LVCMOS33
+set_io_standard o_bbox_valid LVCMOS33
+
+#========================
+# UART（调试/通信）
+#========================
+set_io uart_tx R9
+set_io uart_rx R8
+set_io_standard uart_tx LVCMOS33
+set_io_standard uart_rx LVCMOS33
+
+#========================
+# HDMI 输入 - 蓝色分量（8bit）
+#========================
+set_io i_b[0] U14
+set_io i_b[1] U15
+set_io i_b[2] T15
+set_io i_b[3] W15
+set_io i_b[4] Y16
+set_io i_b[5] AB16
+set_io i_b[6] AA16
+set_io i_b[7] AB17
+set_io_standard i_b[*] LVCMOS33
+
+#========================
+# HDMI 输入 - 绿色分量（8bit）
+#========================
+set_io i_g[0] Y17
+set_io i_g[1] V17
+set_io i_g[2] W18
+set_io i_g[3] AB19
+set_io i_g[4] AA18
+set_io i_g[5] AB18
+set_io i_g[6] Y18
+set_io i_g[7] W17
+set_io_standard i_g[*] LVCMOS33
+
+#========================
+# HDMI 输入 - 红色分量（8bit）
+#========================
+set_io i_r[0] Y15
+set_io i_r[1] AB15
+set_io i_r[2] U16
+set_io i_r[3] V15
+set_io i_r[4] AA14
+set_io i_r[5] AB14
+set_io i_r[6] W14
+set_io i_r[7] Y14
+set_io_standard i_r[*] LVCMOS33
+
+#========================
+# HDMI 输入 - 同步信号
+#========================
+set_io i_valid U13
+set_io i_sof   W13
+set_io i_eol   V13
+set_io clk_hdmi AA12
+set_io_standard i_valid LVCMOS33
+set_io_standard i_sof   LVCMOS33
+set_io_standard i_eol   LVCMOS33
+set_io_standard clk_hdmi LVCMOS33
+
+#========================
+# HDMI 输出 - 控制信号（待补充 RGB 和完整输出）
+#========================
+set_io o_valid Y22
+set_io o_sof   W20
+set_io o_eol   Y21
+set_io_standard o_valid LVCMOS33
+set_io_standard o_sof   LVCMOS33
+set_io_standard o_eol   LVCMOS33
+
+#========================
+# 注意事项
+#========================
+# 1. HDMI 输入需要 MS7200 I2C 初始化，当前缺失
+# 2. 建议先用软件生成的测试源，替代 HDMI 真实输入
+# 3. 所有 IO 均为 LVCMOS33 3.3V 标准
+# 4. DDR3（Bank3）和 HSST 不在此约束中（当前不用）
+# 5. 如需使用 HDMI 实际输入，需完成 MS7200 初始化流程

@@ -1,0 +1,12 @@
+# Python
+pc/.venv/
+__pycache__/
+*.pyc
+
+# Outputs
+results/**
+!results/.gitkeep
+
+# IDE
+.vscode/
+dataset/samples/fpga_stream.bin

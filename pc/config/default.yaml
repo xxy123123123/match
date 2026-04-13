@@ -1,0 +1,48 @@
+app:
+  window_name: "Plate Recognition Demo"
+  max_frames: 300
+
+virtual_source:
+  width: 1280
+  height: 720
+  fps: 25
+  plate_pool:
+    - "粤B12345"
+    - "京A8K2P9"
+    - "沪C9M7N1"
+    - "浙A6D3Q8"
+    - "苏E5T2R4"
+
+fpga_source:
+  host: "127.0.0.1"
+  port: 5600
+  timeout_s: 5.0
+  replay_file: "../dataset/samples/fpga_stream.bin"
+
+detector:
+  mode: "yolo" # yolo | contour
+  model: "./runs/results/training/plate_legal_illegal_multitarget_run7/weights/best.pt"
+  conf: 0.25
+  iou: 0.5
+  max_det: 3
+  min_area: 1200
+  max_area: 25000
+  aspect_ratio_min: 2.0
+  aspect_ratio_max: 6.5
+
+tracking:
+  iou_threshold: 0.15
+  max_lost: 12
+  smooth_alpha: 0.65
+  max_tracks: 6
+  spawn_iou_threshold: 0.35
+  center_dist_threshold: 1.2
+  center_dist_weight: 0.25
+  min_persist_frames: 2
+
+recognizer:
+  mode: "mock"  # mock | baseline
+
+output:
+  save_result: true
+  result_dir: "../results"
