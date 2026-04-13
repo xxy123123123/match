@@ -3,7 +3,7 @@
 ## 1. 目标
 - FPGA(Pango50k)负责图像流预处理/加速。
 - PC 上位机负责车牌检测与识别算法迭代。
-- 当前阶段支持虚拟视频源，在无摄像头条件下联调整链路。
+- 当前阶段支持无摄像头离线回归（virtual/mock/replay），可先完成算法与链路验证。
 
 ## 2. 目录说明
 - `rtl/`：Verilog 源码。
@@ -18,7 +18,11 @@
 
 ## 3. 当前可运行内容
 - 虚拟场景视频流（模拟车辆和车牌）。
-- 车牌区域检测（OpenCV 基线算法）。
+- YOLOv8 车牌检测（当前默认 run7 权重）。
+- 多目标跟踪（IoU+中心距离联合匹配、短轨过滤、轨迹预测续航）。
+- FPGA TCP 协议模拟联调（mock sender + fpga_tcp）。
+- 固定回放流评估（fpga_replay）。
+- 离线评估脚本（连续率、恢复率、短轨占比等指标）。
 - 识别器模式：
   - `mock`：使用虚拟源标签，验证流程与联调。
   - `baseline`：占位识别器，后续替换 OCR/深度模型。
@@ -32,6 +36,11 @@ pip install -r requirements.txt
 python -m app.main --config config/default.yaml --source virtual --show
 ```
 
+默认配置位于 `pc/config/default.yaml`，当前关键项：
+- `detector.mode: yolo`
+- `detector.model: ./runs/results/training/plate_legal_illegal_multitarget_run7/weights/best.pt`
+- `tracking.spawn_iou_threshold / center_dist_threshold / center_dist_weight / min_persist_frames`
+
 ## 5. 方案2联调（无摄像头但有开发板前的预演）
 
 ### 5.1 本地模拟 FPGA->PC 链路
@@ -41,6 +50,11 @@ cd ..
 ```
 
 该脚本会启动一个模拟发送端（TCP）并让 PC 端以 `fpga_tcp` 模式接收。
+
+可选：录制固定回放流（后续做可复现回归）
+```powershell
+.\scripts\run_mock_link.ps1 -Frames 120 -SaveStream "..\dataset\samples\fpga_stream.bin"
+```
 
 ### 5.2 使用开发板真实发送
 当开发板侧能够按协议发送数据后，直接运行：
@@ -67,7 +81,26 @@ python -m app.main --config config/default.yaml --source fpga_tcp --show
 - 让 FPGA 端按 `doc/fpga_pc_protocol.md` 发送帧数据。
 - 替换 `pc/inference/recognizer.py` 为 OCR/深度学习识别器。
 
-## 8. 训练数据入口
+## 8. 无摄像头离线回归（推荐）
+
+一键执行 virtual -> mock tcp + 录制 -> replay -> 评估：
+```powershell
+.\scripts\run_offline_regression.ps1 -Frames 120
+```
+
+主要产物：
+- `results/run_result.csv`
+- `results/metrics_virtual.json`
+- `results/metrics_mock_tcp.json`
+- `results/metrics_replay.json`
+
+单独评估命令：
+```powershell
+cd pc
+python -m tools.eval_run_result --csv ..\results\run_result.csv --out-json ..\results\run_metrics.json
+```
+
+## 9. 训练数据入口
 - 数据目录：`dataset/plate_train/README.md`
 - 数据要求：`doc/training_data_requirements.md`
 - 批量导入脚本：`scripts/import_images.ps1`
