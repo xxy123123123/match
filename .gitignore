@@ -2,11 +2,34 @@
 pc/.venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# Model and training artifacts
+pc/runs/
+runs/
+*.pt
+*.onnx
+*.engine
+*.torchscript
+
+# Dataset and binary artifacts
+dataset/**
+!dataset/samples/
+!dataset/samples/README.md
+*.bin
+*.zip
+*.7z
+*.tar
+*.gz
 
 # Outputs
 results/**
 !results/.gitkeep
+!results/README.md
 
 # IDE
 .vscode/
-dataset/samples/fpga_stream.bin
+
+# OS
+Thumbs.db
+Desktop.ini
