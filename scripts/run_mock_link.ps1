@@ -2,6 +2,7 @@ param(
     [int]$Port = 5600,
     [int]$Frames = 300,
     [string]$SaveStream = "",
+    [string]$ConfigPath = "config/default.yaml",
     [switch]$Show
 )
 
@@ -25,4 +26,4 @@ if ($SaveStream -ne "") {
 }
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $senderCmd
 
-python -m app.main --config config/default.yaml --source fpga_tcp $showArg
+python -m app.main --config $ConfigPath --source fpga_tcp $showArg

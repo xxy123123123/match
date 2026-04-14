@@ -102,7 +102,12 @@ def main() -> None:
 
     yolo_detector = None
     if detector_mode == "yolo":
-        yolo_detector = build_yolo_detector(detector_cfg)
+        try:
+            yolo_detector = build_yolo_detector(detector_cfg)
+        except FileNotFoundError as e:
+            print(f"[WARN] {e}")
+            print("[WARN] Falling back to contour detector for this run.")
+            detector_mode = "contour"
 
     t0 = time.time()
     hits = 0

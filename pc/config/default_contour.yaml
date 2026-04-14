@@ -20,8 +20,8 @@ fpga_source:
   replay_file: "../dataset/samples/fpga_stream.bin"
 
 detector:
-  mode: "yolo" # yolo | contour
-  model: "../results/training/plate_det_scratch3/weights/best.pt"
+  mode: "contour" # yolo | contour
+  model: "../results/training/plate_legal_illegal_run1/weights/best.pt"
   conf: 0.10
   iou: 0.5
   max_det: 3

@@ -19,7 +19,7 @@
 
 ## 3. 当前可运行内容
 - 虚拟场景视频流（模拟车辆和车牌）。
-- YOLOv8 车牌检测（当前默认 run7 权重）。
+- YOLOv8 车牌检测（当前默认 scratch3 权重，路径见配置）。
 - 多目标跟踪（IoU+中心距离联合匹配、短轨过滤、轨迹预测续航）。
 - FPGA TCP 协议模拟联调（mock sender + fpga_tcp）。
 - 固定回放流评估（fpga_replay）。
@@ -39,7 +39,7 @@ python -m app.main --config config/default.yaml --source virtual --show
 
 默认配置位于 `pc/config/default.yaml`，当前关键项：
 - `detector.mode: yolo`
-- `detector.model: ./runs/results/training/plate_legal_illegal_multitarget_run7/weights/best.pt`
+- `detector.model: ../results/training/plate_det_scratch3/weights/best.pt`
 - `tracking.spawn_iou_threshold / center_dist_threshold / center_dist_weight / min_persist_frames`
 
 ## 5. 方案2联调（无摄像头但有开发板前的预演）
@@ -105,3 +105,27 @@ python -m tools.eval_run_result --csv ..\results\run_result.csv --out-json ..\re
 - 数据目录：`dataset/plate_train/README.md`
 - 数据要求：`doc/training_data_requirements.md`
 - 批量导入脚本：`scripts/import_images.ps1`
+
+## 10. PC 验收基线（已验证）
+
+基线日期：2026-04-14（Windows，CPU 推理）
+
+验收命令：
+```powershell
+powershell -ExecutionPolicy Bypass -File ".\scripts\run_pc_acceptance.ps1" -Frames 20
+```
+
+验收结果：
+- `PC acceptance gate PASSED (mode=yolo)`
+- virtual: rows=335, continuity=1.0, short_track_ratio=0.0
+- mock tcp: rows=18, continuity=1.0, predict_recovery_rate=0.8
+- replay: rows=18, continuity=1.0, predict_recovery_rate=0.8
+
+当前门限（`scripts/run_pc_acceptance.ps1` 默认）：
+- `MinContinuity=0.95`
+- `MinRecovery=0.08`
+- `MaxShortTrackRatio=0.20`
+- `mock.rows > 0` 且 `replay.rows > 0`
+
+说明：
+- 验收脚本默认先走 YOLO（`pc/config/default.yaml`），仅在 mock/replay 空轨迹时自动回退 contour（`pc/config/default_contour.yaml`）做兜底诊断。
