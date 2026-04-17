@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 from ultralytics import YOLO
 
+from training.auto_switch_best_model import auto_switch_best_model
 from tools.ccpd_to_yolo import main as convert_main
 
 
@@ -15,6 +16,8 @@ def build_convert_args(args: argparse.Namespace) -> list[str]:
         str(args.dataset_out_dir),
         "--class-id",
         str(args.class_id),
+        "--class-name",
+        str(args.class_name),
         "--val-ratio",
         str(args.val_ratio),
         "--seed",
@@ -33,6 +36,11 @@ def main() -> None:
         help="Output directory for converted YOLO dataset",
     )
     parser.add_argument("--class-id", type=int, default=0, help="YOLO class id for plate detection")
+    parser.add_argument(
+        "--class-name",
+        default="new_energy_plate",
+        help="YOLO class name written into converted dataset yaml",
+    )
     parser.add_argument("--val-ratio", type=float, default=0.1, help="Validation ratio in CCPD-Base")
     parser.add_argument("--seed", type=int, default=20260414)
     parser.add_argument("--limit", type=int, default=0, help="Optional max images for debug")
@@ -47,6 +55,12 @@ def main() -> None:
         default="standard",
         choices=["standard", "mobile"],
         help="Training profile. 'mobile' applies stronger motion-friendly augmentations.",
+    )
+    parser.add_argument(
+        "--auto-switch-best",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="After training, auto-update config/default.yaml to the best model by mAP50-95.",
     )
     parser.add_argument("--resume", action="store_true", help="Resume from checkpoint")
     args = parser.parse_args()
@@ -101,6 +115,14 @@ def main() -> None:
         train_kwargs["resume"] = True
 
     model.train(**train_kwargs)
+
+    if args.auto_switch_best:
+        pc_root = Path(__file__).resolve().parents[1]
+        best = auto_switch_best_model(pc_root)
+        if best is None:
+            print("[WARN] Auto-switch best model skipped: no valid best run found.")
+        else:
+            print(f"[INFO] Auto-switched default model to: {best[0]} (mAP50-95={best[1]:.4f})")
 
 
 if __name__ == "__main__":

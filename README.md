@@ -105,6 +105,11 @@ python -m tools.eval_run_result --csv ..\results\run_result.csv --out-json ..\re
 - 数据目录：`dataset/plate_train/README.md`
 - 数据要求：`doc/training_data_requirements.md`
 - 批量导入脚本：`scripts/import_images.ps1`
+- 当前 CCPD 训练集说明：目前接入的 `CCPD2020/ccpd_green` 图片全为新能源车牌（绿牌）。
+- CCPD 转换后的类别名默认写为 `new_energy_plate`（可通过 `--class-name` 覆盖）。
+- 已发现 `CCPD2019.tar.xz` 含多种特殊场景子集：`ccpd_blur`、`ccpd_weather`、`ccpd_tilt`、`ccpd_rotate`、`ccpd_fn`、`ccpd_challenge`、`ccpd_db`、`ccpd_np`。
+- 当前转换策略会将 `ccpd_*` 子集按 `val_ratio` 随机分入 train/val（不再默认只进 test）。
+- 训练脚本默认在训练结束后自动扫描历史结果，按 `mAP50-95` 切换 `pc/config/default.yaml` 到当前最优 `best.pt`（可用 `--no-auto-switch-best` 关闭）。
 
 ## 10. PC 验收基线（已验证）
 

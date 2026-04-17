@@ -71,6 +71,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Plate recognition demo with virtual/fpga sources")
     parser.add_argument("--config", required=True, help="Path to YAML config")
     parser.add_argument("--source", default="virtual", help="Frame source name")
+    parser.add_argument("--max-frames", type=int, default=None, help="Override max frames; <=0 means run until manually stopped")
     parser.add_argument("--show", action="store_true", help="Show live window")
     args = parser.parse_args()
 
@@ -80,7 +81,11 @@ def main() -> None:
     tracking_cfg = cfg.get("tracking", {})
     recognizer_cfg = cfg.get("recognizer", {})
 
-    max_frames = int(app_cfg.get("max_frames", 300))
+    cfg_max_frames = int(app_cfg.get("max_frames", 300))
+    max_frames = cfg_max_frames if args.max_frames is None else int(args.max_frames)
+    if max_frames <= 0:
+        # Use a very large number to simulate open-ended streaming for all sources.
+        max_frames = 2_147_483_647
     window_name = str(app_cfg.get("window_name", "Plate Recognition Demo"))
     detector_mode = str(detector_cfg.get("mode", "contour")).lower()
 
@@ -164,7 +169,8 @@ def main() -> None:
 
             if args.show:
                 cv2.imshow(window_name, frame)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
+                key = cv2.waitKey(1) & 0xFF
+                if key in (27, ord("q")):
                     break
 
     elapsed = max(time.time() - t0, 1e-6)

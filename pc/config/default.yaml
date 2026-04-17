@@ -1,6 +1,6 @@
 app:
   window_name: "Plate Recognition Demo"
-  max_frames: 300
+  max_frames: 0  # <=0 means run until Esc/q
 
 virtual_source:
   width: 1280
@@ -21,7 +21,7 @@ fpga_source:
 
 detector:
   mode: "yolo" # yolo | contour
-  model: "../results/training/plate_det_scratch3/weights/best.pt"
+  model: "./runs/results/training/ccpd_run2/weights/best.pt"
   conf: 0.10
   iou: 0.5
   max_det: 3
@@ -41,7 +41,7 @@ tracking:
   min_persist_frames: 2
 
 recognizer:
-  mode: "mock"  # mock | baseline
+  mode: "ocr"  # ocr | mock
 
 output:
   save_result: true

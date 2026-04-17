@@ -5,6 +5,8 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
+from training.auto_switch_best_model import auto_switch_best_model
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train YOLO plate detector")
@@ -21,6 +23,12 @@ def main() -> None:
         default="standard",
         choices=["standard", "mobile"],
         help="Training profile. 'mobile' applies stronger motion-friendly augmentations.",
+    )
+    parser.add_argument(
+        "--auto-switch-best",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="After training, auto-update config/default.yaml to the best model by mAP50-95.",
     )
     args = parser.parse_args()
 
@@ -61,6 +69,14 @@ def main() -> None:
         train_kwargs["data"] = str(data_yaml)
 
     model.train(**train_kwargs)
+
+    if args.auto_switch_best:
+        pc_root = Path(__file__).resolve().parents[1]
+        best = auto_switch_best_model(pc_root)
+        if best is None:
+            print("[WARN] Auto-switch best model skipped: no valid best run found.")
+        else:
+            print(f"[INFO] Auto-switched default model to: {best[0]} (mAP50-95={best[1]:.4f})")
 
 
 if __name__ == "__main__":

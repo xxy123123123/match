@@ -44,16 +44,26 @@ def collect_images(ccpd_root: Path) -> List[Tuple[Path, str]]:
         if not p.is_file() or p.suffix.lower() not in VALID_SUFFIX:
             continue
         parent = p.parent.name.lower()
-        if parent.startswith("ccpd"):
-            subset = parent
-        else:
-            # fallback: infer from any path segment containing ccpd
-            subset = "ccpd-unknown"
-            for seg in p.parts:
-                s = str(seg).lower()
-                if s.startswith("ccpd"):
-                    subset = s
-                    break
+
+        # Priority 1: infer split from path segments when dataset already has train/val/test folders.
+        subset = ""
+        for seg in p.parts:
+            s = str(seg).lower()
+            if s in {"train", "val", "test"}:
+                subset = s
+                break
+
+        # Priority 2: fallback to CCPD subset naming.
+        if not subset:
+            if parent.startswith("ccpd"):
+                subset = parent
+            else:
+                subset = "ccpd-unknown"
+                for seg in p.parts:
+                    s = str(seg).lower()
+                    if s.startswith("ccpd"):
+                        subset = s
+                        break
         items.append((p, subset))
     return items
 
@@ -99,10 +109,23 @@ def choose_split(
     val_ratio: float,
     rng: random.Random,
 ) -> str:
-    # Following CCPD convention: CCPD-Base for train/val, others for test.
-    if subset == "ccpd-base":
+    # Respect explicit split folders first (e.g., CCPD2020 ccpd_green/train|val|test).
+    if subset in {"train", "val", "test"}:
+        return subset
+
+    # CCPD2019 convention: use all ccpd_* subsets for train/val random split.
+    # This keeps special-condition subsets (blur/weather/tilt/rotate/fn/challenge/db/np)
+    # participating in training instead of being test-only.
+    if subset.startswith("ccpd-") or subset.startswith("ccpd_"):
         return "val" if rng.random() < val_ratio else "train"
+
+    # Unknown subsets fallback to test-only.
     return "test"
+
+
+def is_negative_subset(subset: str) -> bool:
+    s = subset.lower()
+    return s in {"ccpd_np", "ccpd-np", "np"}
 
 
 def main() -> None:
@@ -110,6 +133,11 @@ def main() -> None:
     parser.add_argument("--ccpd-root", required=True, help="Root folder of extracted CCPD dataset")
     parser.add_argument("--out-dir", required=True, help="Output YOLO dataset directory")
     parser.add_argument("--class-id", type=int, default=0, help="Class id for plate detection")
+    parser.add_argument(
+        "--class-name",
+        default="new_energy_plate",
+        help="Class name written into dataset yaml (e.g., new_energy_plate)",
+    )
     parser.add_argument("--val-ratio", type=float, default=0.1, help="Validation ratio in CCPD-Base")
     parser.add_argument("--seed", type=int, default=20260414)
     parser.add_argument("--limit", type=int, default=0, help="Optional max images for debug")
@@ -129,26 +157,34 @@ def main() -> None:
         items = items[: args.limit]
 
     rng = random.Random(args.seed)
-    stats: Dict[str, int] = {"train": 0, "val": 0, "test": 0, "skipped": 0}
+    stats: Dict[str, int] = {"train": 0, "val": 0, "test": 0, "background": 0, "skipped": 0}
 
     for i, (img_path, subset) in enumerate(items):
-        try:
-            (x, y, w, h), _plate = parse_ccpd_name(img_path.name)
-            img_w, img_h = image_shape_fast(img_path)
-            cx, cy, nw, nh = bbox_to_yolo(x, y, w, h, img_w, img_h)
-        except Exception:
-            stats["skipped"] += 1
-            continue
-
         split = choose_split(img_path, subset, args.val_ratio, rng)
         dst_img = out_dir / "images" / split / img_path.name
         dst_lbl = out_dir / "labels" / split / (img_path.stem + ".txt")
 
+        try:
+            (x, y, w, h), _plate = parse_ccpd_name(img_path.name)
+            img_w, img_h = image_shape_fast(img_path)
+            cx, cy, nw, nh = bbox_to_yolo(x, y, w, h, img_w, img_h)
+            has_box = True
+        except Exception:
+            # CCPD-NP files are often numeric names without encoded bbox.
+            # Keep them as background negatives with empty labels.
+            if not is_negative_subset(subset):
+                stats["skipped"] += 1
+                continue
+            has_box = False
+
         shutil.copy2(img_path, dst_img)
         with dst_lbl.open("w", encoding="utf-8") as f:
-            f.write(f"{args.class_id} {cx:.6f} {cy:.6f} {nw:.6f} {nh:.6f}\n")
+            if has_box:
+                f.write(f"{args.class_id} {cx:.6f} {cy:.6f} {nw:.6f} {nh:.6f}\n")
 
         stats[split] += 1
+        if not has_box:
+            stats["background"] += 1
         if (i + 1) % 5000 == 0:
             print(f"Processed {i + 1}/{len(items)}")
 
@@ -162,7 +198,7 @@ def main() -> None:
                 "val: images/val",
                 "test: images/test",
                 "names:",
-                f"  {args.class_id}: plate",
+                f"  {args.class_id}: {args.class_name}",
             ]
         )
         + "\n",
@@ -171,7 +207,10 @@ def main() -> None:
 
     print("Done converting CCPD -> YOLO")
     print(f"Total images found: {len(items)}")
-    print(f"train={stats['train']} val={stats['val']} test={stats['test']} skipped={stats['skipped']}")
+    print(
+        f"train={stats['train']} val={stats['val']} test={stats['test']} "
+        f"background={stats['background']} skipped={stats['skipped']}"
+    )
     print(f"Output: {out_dir}")
     print(f"YAML: {yaml_path}")
 
